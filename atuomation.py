@@ -30,12 +30,17 @@ def scrape_data(driver):
     if os.path.exists(csv_filename):
         existing_df = pd.read_csv(csv_filename)
     else:
-        existing_df = pd.DataFrame(columns=['Doctor Name', 'Speciality', 'Specialties', 'Expertise', 'Access', 'Opening Hours', 'Healthcare Professional', 'Speaking Languages', 'Phone Number'])
+        existing_df = pd.DataFrame(columns=['Image URL', 'Doctor Name', 'Speciality', 'Specialties', 'Expertise', 'Access', 'Opening Hours', 'Healthcare Professional', 'Speaking Languages', 'Phone Number', 'Page URL', 'Page Number'])
 
     try:
         driver.get("https://www.onedoc.ch/en/general-practitioner-gp")
+        current_page = 1
 
         while not interrupted:
+            print(f"Scraping Page: {current_page}")
+            current_page_url = driver.current_url
+            print(f"Current Page URL: {current_page_url}")
+
             profile_buttons = WebDriverWait(driver, 10).until(
                 EC.presence_of_all_elements_located((By.XPATH, '//a[@class="Button Button--small"]'))
             )
@@ -50,6 +55,12 @@ def scrape_data(driver):
                     driver.switch_to.window(driver.window_handles[-1])
                     time.sleep(3)
 
+                    # Image URL
+                    image_url_element = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/header/div/div[1]/img'))
+                    )
+                    image_url = image_url_element.get_attribute('src')
+                    
                     doctor_name_element = WebDriverWait(driver, 10).until(
                         EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/header/div/div[2]/h1'))
                     )
@@ -178,6 +189,7 @@ def scrape_data(driver):
                         print(f"Error while retrieving phone number: {e}")
 
                     profile_data = {
+                        'Image URL': image_url,
                         'Doctor Name': doctor_name,
                         'Speciality': doctor_speciality,
                         'Specialties': specialties,
@@ -187,6 +199,8 @@ def scrape_data(driver):
                         'Healthcare Professional': healthcare_professional,
                         'Speaking Languages': speaking_languages,
                         'Phone Number': phone_number,
+                        'Page URL': current_page_url,
+                        'Page Number': current_page
                     }
 
                     new_data_df = pd.DataFrame([profile_data])
@@ -212,6 +226,7 @@ def scrape_data(driver):
                     EC.element_to_be_clickable((By.XPATH, '/html/body/div[5]/main/div/div[3]/div[1]/div[21]/div[2]/a'))
                 )
                 next_button.click()
+                current_page += 1
                 time.sleep(3)
             except:
                 print("No more pages left.")
