@@ -30,14 +30,13 @@ def scrape_data(driver):
     if os.path.exists(csv_filename):
         existing_df = pd.read_csv(csv_filename)
     else:
-        existing_df = pd.DataFrame(columns=['Image URL', 'Doctor Name', 'Speciality', 'Specialties', 'Expertise', 'Access', 'Opening Hours', 'Healthcare Professional', 'Speaking Languages', 'Phone Number', 'Page URL', 'Page Number'])
+        existing_df = pd.DataFrame(columns=['Image URL', 'Doctor Name', 'Speciality', 'Specialties', 'Expertise', 'Access', 'Opening Hours', 'Healthcare Professional', 'Speaking Languages', 'Phone Number', 'Page URL'])
 
     try:
-        driver.get("https://www.onedoc.ch/en/general-practitioner-gp")
-        current_page = 1
+        driver.get("https://www.onedoc.ch/en/general-practitioner-gp/switzerland?page=6")
+        
 
         while not interrupted:
-            print(f"Scraping Page: {current_page}")
             current_page_url = driver.current_url
             print(f"Current Page URL: {current_page_url}")
 
@@ -176,12 +175,12 @@ def scrape_data(driver):
                                 )
                                 if phone_section_element:
                                     phone_section_element.click()
-                                    time.sleep(2)  # Allow time for the section to expand
+                                    time.sleep(2)  
                                     phone_number_element = WebDriverWait(driver, 10).until(
                                         EC.presence_of_element_located((By.XPATH, number_xpath))
                                     )
                                     phone_number = phone_number_element.text.strip()
-                                    break  # Exit loop if phone number is found
+                                    break 
                             except:
                                 continue
                         
@@ -200,7 +199,6 @@ def scrape_data(driver):
                         'Speaking Languages': speaking_languages,
                         'Phone Number': phone_number,
                         'Page URL': current_page_url,
-                        'Page Number': current_page
                     }
 
                     new_data_df = pd.DataFrame([profile_data])
@@ -236,7 +234,7 @@ def scrape_data(driver):
         print(f"An error occurred during scraping: {e}")
 
     finally:
-        # Ensure the latest data is saved
+        
         existing_df.drop_duplicates().to_csv(csv_filename, index=False)
         driver.quit()
 
