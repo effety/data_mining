@@ -30,7 +30,7 @@ def scrape_data(driver):
     if os.path.exists(csv_filename):
         existing_df = pd.read_csv(csv_filename)
     else:
-        existing_df = pd.DataFrame(columns=['Doctor Name', 'Expertise', 'Specialties'])
+        existing_df = pd.DataFrame(columns=['Doctor Name', 'Expertise', 'Specialties', 'Access', 'Opening Hours', 'Healthcare Professional', 'Speaking Languages', 'Phone Number'])
 
     try:
         driver.get("https://www.onedoc.ch/en/general-practitioner-gp")
@@ -63,13 +63,50 @@ def scrape_data(driver):
                     specialties_elements = WebDriverWait(driver, 10).until(
                         EC.presence_of_all_elements_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[2]/div[1]/div[2]/div/div'))
                     )
-                    
                     specialties = ', '.join([specialty.text.strip() for specialty in specialties_elements])
-                    
+
+                    access_element = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[4]/div/div[1]/div[2]'))
+                    )
+                    access_info = access_element.text.strip()
+
+                    doctor_openinghour_elements = WebDriverWait(driver, 10).until(
+                        EC.presence_of_all_elements_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[4]/div/div[1]/div[4]'))
+                    )
+                    opening_hour = ', '.join([hour.text.strip() for hour in doctor_openinghour_elements])
+
+                    healthcare_professional_element = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[6]/div[1]'))
+                    )
+                    healthcare_professional = healthcare_professional_element.text.strip()
+
+                    speaking_language_element = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[6]/div[3]/div/div[1]/p'))
+                    )
+                    speaking_language = speaking_language_element.text.strip()
+
+                    phone_section_element = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[7]/div/div[2]/div[5]'))
+                    )
+                    phone_section_element.click()
+                    time.sleep(2) 
+
+                    # Now scrape the phone number
+                    phone_number_element = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[7]/div/div[2]/div[5]/div[2]/p/a'))
+                    )
+                    phone = phone_number_element.text.strip()
+                    print(f"Phone Number: {phone}")  # Debugging print
+
                     profile_data = {
                         'Doctor Name': doctor_name,
                         'Expertise': doctor_expertise,
                         'Specialties': specialties,
+                        'Access': access_info,
+                        'Opening Hours': opening_hour,
+                        'Healthcare Professional': healthcare_professional,
+                        'Speaking Languages': speaking_language,
+                        'Phone Number': phone,
                     }
 
                     # Convert profile_data to DataFrame and concatenate with existing_df
