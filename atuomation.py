@@ -30,7 +30,7 @@ def scrape_data(driver):
     if os.path.exists(csv_filename):
         existing_df = pd.read_csv(csv_filename)
     else:
-        existing_df = pd.DataFrame(columns=['Doctor Name', 'Expertise', 'Specialties', 'Access', 'Opening Hours', 'Healthcare Professional', 'Speaking Languages', 'Phone Number'])
+        existing_df = pd.DataFrame(columns=['Doctor Name', 'Speciality', 'Specialties', 'Expertise', 'Access', 'Opening Hours', 'Healthcare Professional', 'Speaking Languages', 'Phone Number'])
 
     try:
         driver.get("https://www.onedoc.ch/en/general-practitioner-gp")
@@ -55,65 +55,143 @@ def scrape_data(driver):
                     )
                     doctor_name = doctor_name_element.text.strip()
                     
-                    doctor_expert_element = WebDriverWait(driver, 10).until(
+                    doctor_speciality_element = WebDriverWait(driver, 10).until(
                         EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/header/div/div[2]/h2'))
                     )
-                    doctor_expertise = doctor_expert_element.text.strip()
+                    doctor_speciality = doctor_speciality_element.text.strip()
+                    
+                    # Specialties
+                    try:
+                        specialties_elements = WebDriverWait(driver, 5).until(
+                            EC.presence_of_all_elements_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[2]/div[3]/div[2]'))
+                        )
+                    except:
+                        try:
+                            specialties_elements = WebDriverWait(driver, 5).until(
+                                EC.presence_of_all_elements_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[2]/div[1]/div[2]'))
+                            )
+                        except:
+                            specialties_elements = WebDriverWait(driver, 5).until(
+                                EC.presence_of_all_elements_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[2]/div/div[2]'))
+                            )
 
-                    specialties_elements = WebDriverWait(driver, 10).until(
-                        EC.presence_of_all_elements_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[2]/div[1]/div[2]/div/div'))
-                    )
-                    specialties = ', '.join([specialty.text.strip() for specialty in specialties_elements])
+                    specialties = ', '.join([specialty.text.strip().replace('\n', ', ') for specialty in specialties_elements])
 
-                    access_element = WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[4]/div/div[1]/div[2]'))
-                    )
-                    access_info = access_element.text.strip()
+                    # Expertise
+                    try:
+                        expertise_elements = WebDriverWait(driver, 5).until(
+                            EC.presence_of_all_elements_located((By.CLASS_NAME, 'od-profile-expertise-expandable'))
+                        )
+                        expertise = ', '.join([element.text.strip().replace('\n', ', ') for element in expertise_elements])
+                    except:
+                        expertise = ""
 
-                    doctor_openinghour_elements = WebDriverWait(driver, 10).until(
-                        EC.presence_of_all_elements_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[4]/div/div[1]/div[4]'))
-                    )
-                    opening_hour = ', '.join([hour.text.strip() for hour in doctor_openinghour_elements])
+                    # Access
+                    try:
+                        access_element = WebDriverWait(driver, 5).until(
+                            EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[6]/div/div[1]/div[2]'))
+                        )
+                        access = access_element.text.strip().replace('\n', ', ')
+                    except:
+                        try:
+                            access_element = WebDriverWait(driver, 5).until(
+                                EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[4]/div/div[1]/div[2]'))
+                            )
+                            access = access_element.text.strip().replace('\n', ', ')
+                        except:
+                            access = ""
 
-                    healthcare_professional_element = WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[6]/div[1]'))
-                    )
-                    healthcare_professional = healthcare_professional_element.text.strip()
+                    # Opening Hours
+                    opening_hours = ""
+                    try:
+                        opening_hours_element = WebDriverWait(driver, 5).until(
+                            EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[6]/div/div[1]/div[4]'))
+                        )
+                        opening_hours = opening_hours_element.text.strip()
+                    except:
+                        try:
+                            opening_hours_element = WebDriverWait(driver, 5).until(
+                                EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[4]/div/div[1]/div[4]'))
+                            )
+                            opening_hours = opening_hours_element.text.strip()
+                        except:
+                            pass
+                    
+                    if opening_hours.startswith("Opening hours"):
+                        opening_hours = opening_hours.replace("Opening hours", "").strip()
 
-                    speaking_language_element = WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[6]/div[3]/div/div[1]/p'))
-                    )
-                    speaking_language = speaking_language_element.text.strip()
+                    # Healthcare Professional
+                    healthcare_professional = ""
+                    try:
+                        healthcare_element = WebDriverWait(driver, 5).until(
+                            EC.presence_of_element_located((By.XPATH, '//div[@class="od-profile-card-section-body cw-rich-text"]'))
+                        )
+                        healthcare_professional = healthcare_element.text.strip()
+                    except:
+                        pass
 
-                    phone_section_element = WebDriverWait(driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[7]/div/div[2]/div[5]'))
-                    )
-                    phone_section_element.click()
-                    time.sleep(2) 
+                    # Speaking Languages
+                    speaking_languages = ""
+                    try:
+                        languages_section = WebDriverWait(driver, 5).until(
+                            EC.presence_of_element_located((By.XPATH, '//div[@class="od-profile-card-section-description-item"]'))
+                        )
+                        languages_header = languages_section.find_element(By.XPATH, './/h4[contains(text(), "Spoken languages")]')
+                        if languages_header:
+                            languages_text = languages_header.find_element(By.XPATH, './following-sibling::p').text.strip()
+                            speaking_languages = languages_text.replace(" and ", ", ")
+                    except:
+                        pass
 
-                    # Now scrape the phone number
-                    phone_number_element = WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/main/div/div[1]/div[1]/div[7]/div/div[2]/div[5]/div[2]/p/a'))
-                    )
-                    phone = phone_number_element.text.strip()
-                    print(f"Phone Number: {phone}")  # Debugging print
+                    # Phone Number
+                    phone_number = ""
+                    try:
+                        # Check if any of the phone number section XPaths exist
+                        phone_section_xpath = [
+                            '/html/body/div[5]/main/div/div[1]/div[1]/div[7]/div/div[2]/div[4]',
+                            '/html/body/div[5]/main/div/div[1]/div[1]/div[9]/div/div[2]/div[4]'
+                        ]
+                        phone_number_xpath = [
+                            '/html/body/div[5]/main/div/div[1]/div[1]/div[7]/div/div[2]/div[4]/div[2]/p/a',
+                            '/html/body/div[5]/main/div/div[1]/div[1]/div[7]/div/div[2]/div[3]/div[2]/p/a',
+                            '/html/body/div[5]/main/div/div[1]/div[1]/div[9]/div/div[2]/div[4]/div[2]/p/a'
+                        ]
+
+                        phone_number_element = None
+                        for section_xpath, number_xpath in zip(phone_section_xpath, phone_number_xpath):
+                            try:
+                                phone_section_element = WebDriverWait(driver, 5).until(
+                                    EC.presence_of_element_located((By.XPATH, section_xpath))
+                                )
+                                if phone_section_element:
+                                    phone_section_element.click()
+                                    time.sleep(2)  # Allow time for the section to expand
+                                    phone_number_element = WebDriverWait(driver, 10).until(
+                                        EC.presence_of_element_located((By.XPATH, number_xpath))
+                                    )
+                                    phone_number = phone_number_element.text.strip()
+                                    break  # Exit loop if phone number is found
+                            except:
+                                continue
+                        
+                    except Exception as e:
+                        print(f"Error while retrieving phone number: {e}")
 
                     profile_data = {
                         'Doctor Name': doctor_name,
-                        'Expertise': doctor_expertise,
+                        'Speciality': doctor_speciality,
                         'Specialties': specialties,
-                        'Access': access_info,
-                        'Opening Hours': opening_hour,
+                        'Expertise': expertise,
+                        'Access': access,
+                        'Opening Hours': opening_hours,
                         'Healthcare Professional': healthcare_professional,
-                        'Speaking Languages': speaking_language,
-                        'Phone Number': phone,
+                        'Speaking Languages': speaking_languages,
+                        'Phone Number': phone_number,
                     }
 
-                    # Convert profile_data to DataFrame and concatenate with existing_df
                     new_data_df = pd.DataFrame([profile_data])
                     existing_df = pd.concat([existing_df, new_data_df], ignore_index=True)
 
-                    # Save the DataFrame to CSV
                     existing_df.drop_duplicates().to_csv(csv_filename, index=False)
                     print(f"Saved profile {index + 1} data to {csv_filename}")
 
